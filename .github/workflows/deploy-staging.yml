@@ -43,7 +43,6 @@ jobs:
           echo "PINECONE_INDEX_NAME=${{ secrets.PINECONE_INDEX_NAME }}" >> $GITHUB_ENV
           echo "EMBEDDING_DIMENSION=${{ secrets.EMBEDDING_DIMENSION }}" >> $GITHUB_ENV
           echo "MONGODB_QUESTIONS_DB_NAME=${{ secrets.MONGODB_QUESTIONS_DB_NAME }}" >> $GITHUB_ENV
-          echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> $GITHUB_ENV
           echo "ALLOWED_ORIGINS=https://staging.teachr.live" >> $GITHUB_ENV
           echo "FRONTEND_URL=https://staging.teachr.live" >> $GITHUB_ENV
 
