@@ -302,7 +302,7 @@ aitutor/
 - `GET /api/skill-scores` - Get all skill scores for current user
 - `GET /next-question` - Get next recommended question (legacy)
 
-**Port**: 8000 (local), 8080 (Cloud Run)
+**Port**: 8080 (local and Cloud Run)
 
 **Dependencies**: MongoDB (`generated_skills`, `scraped_questions`, `users` collections)
 
@@ -324,7 +324,7 @@ aitutor/
 - `POST /auth/logout` - Logout endpoint
 - `GET /health` - Health check
 
-**Port**: 8003 (local), 8080 (Cloud Run)
+**Port**: 8003 (local and Cloud Run)
 
 **Dependencies**: MongoDB (`users` collection)
 
@@ -352,7 +352,7 @@ aitutor/
 - `POST /send_instruction_to_tutor` - Get instruction prompt for tutor injection
 - `GET /health` - Health check
 
-**Port**: 8002 (local), 8080 (Cloud Run)
+**Port**: 8002 (local and Cloud Run)
 
 **Dependencies**: OpenRouter API (for LLM calls)
 
@@ -369,7 +369,7 @@ aitutor/
 - `GET /api/questions/{sample_size}` - Get questions (legacy endpoint)
 - `GET /health` - Health check
 
-**Port**: 8001 (local), 8080 (Cloud Run)
+**Port**: 8001 (local and Cloud Run)
 
 **Dependencies**: MongoDB (`scraped_questions` collection)
 
@@ -556,6 +556,26 @@ npm install
 cd ..
 ```
 
+### Step 4.5: Configure Frontend Environment Variables
+
+Create a `frontend/.env` file with your API endpoints:
+
+```bash
+cd frontend
+cat > .env << EOF
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+
+# Backend API URLs (local development)
+VITE_DASH_API_URL=http://localhost:8080
+VITE_AUTH_SERVICE_URL=http://localhost:8003
+VITE_SHERLOCKED_API_URL=http://localhost:8001
+VITE_TEACHING_ASSISTANT_API_URL=http://localhost:8002
+EOF
+cd ..
+```
+
+Replace `your_google_client_id_here` with your actual Google OAuth Client ID.
+
 ### Step 5: Set Up MongoDB Collections
 
 The collections will be created automatically when the services start. However, you need to:
@@ -614,15 +634,30 @@ LLM model configuration for question generation and teaching assistant:
 
 ### Frontend Configuration
 
-Frontend configuration is done via environment variables during build (see [Deployment](#deployment)).
+Frontend configuration is done via environment variables. For **local development**, create a `frontend/.env` file:
+
+```bash
+# Google OAuth Client ID
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+
+# Backend API URLs (local development)
+VITE_DASH_API_URL=http://localhost:8080
+VITE_AUTH_SERVICE_URL=http://localhost:8003
+VITE_SHERLOCKED_API_URL=http://localhost:8001
+VITE_TEACHING_ASSISTANT_API_URL=http://localhost:8002
+```
+
+**Important**: After modifying the `.env` file, restart the frontend development server for changes to take effect.
+
+For **production deployment**, these environment variables are injected during the Docker build process (see [Deployment](#deployment)).
 
 ### Service Ports (Local Development)
 
-- **DASH API**: `http://localhost:8000`
+- **DASH API**: `http://localhost:8080`
 - **SherlockED API**: `http://localhost:8001`
 - **Teaching Assistant API**: `http://localhost:8002`
 - **Auth Service**: `http://localhost:8003`
-- **Frontend**: `http://localhost:3000` (or Vite default port)
+- **Frontend**: `http://localhost:3000`
 
 **Note**: Tutor service is integrated in the frontend and connects directly to Gemini Live API (no separate backend service).
 
@@ -645,7 +680,7 @@ This script starts all backend services in the background.
 ```bash
 cd services/DashSystem
 python -m services.DashSystem.dash_api
-# Or: uvicorn services.DashSystem.dash_api:app --port 8000
+# Or: uvicorn services.DashSystem.dash_api:app --port 8080
 ```
 
 #### Start Auth Service
@@ -687,7 +722,7 @@ Frontend will be available at `http://localhost:3000` (or the port Vite assigns)
 
 Check health endpoints:
 
-- DASH API: `http://localhost:8000/health` (if available)
+- DASH API: `http://localhost:8080/health`
 - Auth Service: `http://localhost:8003/health`
 - Teaching Assistant: `http://localhost:8002/health`
 - SherlockED API: `http://localhost:8001/health`
@@ -1061,9 +1096,14 @@ python generate_skills_from_scraped.py
    - Verify MongoDB network access (firewall, IP whitelist)
    - Test connection: `python -c "from managers.mongodb_manager import mongo_db; mongo_db.test_connection()"`
 
-2. **Frontend Can't Connect to Backend**
+2. **Frontend Can't Connect to Backend (ERR_CONNECTION_REFUSED)**
+   - **Most Common**: Missing or incorrect frontend `.env` file
+     - Ensure `frontend/.env` exists with correct API URLs
+     - DASH API should be `http://localhost:8080` (NOT 8000)
+     - After updating `.env`, restart the frontend dev server
    - Check CORS configuration in backend services
-   - Verify backend URLs in frontend environment variables
+   - Verify all backend services are running (check logs in `logs/` directory)
+   - Verify backend URLs in browser console network tab
    - Check browser console for CORS errors
 
 3. **Tutor Connection Fails**
@@ -1115,10 +1155,15 @@ For issues and questions:
 
 ---
 
-**Last Updated**: 2025-01-27
-**Version**: 1.1.0
+**Last Updated**: 2025-01-26
+**Version**: 1.2.0
 
 ## Recent Updates
+
+### Version 1.2.0 (2025-01-26)
+- **Port Standardization**: Updated DASH API local development port from 8000 to 8080 for consistency with Cloud Run deployment
+- **Frontend Environment Configuration**: Added comprehensive frontend `.env` configuration guide for local development
+- **Deployment Improvements**: Added GEMINI_API_KEY and GEMINI_MODEL to TeachingAssistant service environment variables
 
 ### Version 1.1.0 (2025-01-27)
 - **Tutor Service Migration**: Moved from backend WebSocket proxy to frontend direct integration with Gemini Live API
